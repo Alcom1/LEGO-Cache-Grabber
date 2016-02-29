@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>File Input</title>
+        <style>
+            *
+            {
+                margin: 0;
+                padding: 0;
+            }
+            
+            #i_hold_everything
+            {
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                width: 800px;
+                margin-left: -400px;
+                margin-top: -120px;
+            }
+            
+            #title
+            {
+                margin: 20px 0;
+            }
+            
+            #drop_outer
+            {
+                margin: auto;
+                top: 50%;
+                left: 50%;
+                width: 400px;
+                border: 1px solid #ccc;
+            }
+            
+            #drop
+            {
+                margin: 10px;
+                border: 2px dashed #bbb;
+            }
+            
+            #drop_text
+            {
+                margin: 20px;
+                font: 40px "Courier New";
+                text-align: center;
+            }
+            
+            hr
+            {
+                margin: 10px;
+            }
+            
+            h2
+            {
+                font: bold 60px "Courier New";
+                text-align: center;
+            }
+            
+            h3
+            {
+                font: bold 20px "Courier New";
+                text-align: center;
+            }
+            
+            #materials_list
+            {
+                text-align: center;
+                margin: 10px;
+            }
+        </style>
+        <script>
+            //Init
+            function init()
+            {
+                var drop = document.getElementById("drop");
+                drop.addEventListener('dragover', handleDrag, false);
+                drop.addEventListener('drop', handleFiles, false);
+            }
+            
+            //Handler for dragover event.
+            function handleDrag(event)
+            {
+                //Stop browser from loading file.
+                event.preventDefault();
+            }
+            
+            //Handler for drop event.
+            function handleFiles(event)
+            {
+                //Stop browser from loading file.
+                event.preventDefault();
+                
+                //Files from drop event.
+                var files = event.target.files || event.dataTransfer.files;
+                
+                //Reader
+                var reader = new FileReader();
+                
+                //Function that reader performs when file is loaded.
+                reader.onloadend = function()
+                {
+                    //XMLHttpRequest of first file.
+                    var xhr = new XMLHttpRequest();
+                    xhr.overrideMimeType("text/xml");   //Force to read as XML, probably not needed.
+                    xhr.onload = function()
+                    {
+                        var xml = xhr.responseXML;      //xml file being read.
+                        if(xml == null)
+                            return;
+                        
+                        traverseXML(xml);               //Run through the xml file and perform actions.
+                    }
+			        xhr.open('GET', reader.result, true);
+                    xhr.send();
+                }
+                
+                //Read only the first file from drop.
+                reader.readAsDataURL(files[0]);
+            }
+            
+            //Function fo traversing through the XML file.
+            function traverseXML(xml)
+            {
+                var elements = xml.childNodes;  //Child elements of the
+                
+                //Run through child elements.
+                for(var j = 0; j < elements.length; j++)
+                {
+                    var attributes = elements[j].attributes;
+                    if(typeof attributes !== 'undefined')   //Because attributes can be undefined, somehow.
+                    {
+                        for(var i = 0; i < attributes.length; i++)
+                        {
+                            //Download attribute values with the complete URI (swf, flv)
+                            if(attributes[i].value.startsWith("http"))
+                            {
+                                downloadURI(attributes[i].value, "LEGO");
+                            }
+                            
+                            //Download attribute values with the partial URI
+                            else if(attributes[i].value.startsWith("/upload/"))
+                            {
+                                downloadURI("http://cache.lego.com" + attributes[i].value, "LEGO");
+                            }
+                        }
+                        traverseXML(elements[j]);   //Recursively traverse through the elements of hte document.
+                    }
+                }
+            }
+            
+            //Function for downloading from a URI
+            function downloadURI(uri, name)
+            {
+                var link = document.createElement("a");
+                link.download = name;
+                link.href = uri;
+                link.click();
+            }
+                        
+            window.onload = init;
+        </script>
+    </head>
+    <body>
+        <div id="i_hold_everything">
+            <div id="title">
+                <h2>LEGO Cache Grabber</h2>
+                <h3>For Chrome, Opera, and not Firefox</h3>
+            </div>
+            <div id="drop_outer">
+                <div id="drop">
+                    <p id="drop_text">Drop XML file here!</p>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>
